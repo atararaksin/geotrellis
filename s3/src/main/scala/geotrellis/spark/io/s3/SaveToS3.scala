@@ -20,6 +20,7 @@ import geotrellis.spark.{LayerId, SpatialKey}
 import geotrellis.spark.io.s3.conf.S3Config
 
 import software.amazon.awssdk.services.s3.model.{PutObjectRequest, PutObjectResponse, S3Exception}
+import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.core.sync.RequestBody
 import org.apache.spark.rdd.RDD
 import cats.effect.{IO, Timer}
@@ -61,7 +62,9 @@ object SaveToS3 {
     rdd: RDD[(K, Array[Byte])],
     keyToUri: K => String,
     putObjectModifier: PutObjectRequest => PutObjectRequest = { p => p },
-    s3Maker: () => S3Client = () => S3Client.DEFAULT,
+    s3Maker: () => S3Client = () =>
+      // https://github.com/aws/aws-sdk-java-v2/blob/master/docs/BestPractices.md#reuse-sdk-client-if-possible
+      S3Client.create(),
     threads: Int = defaultThreadCount
   ): Unit = {
     val keyToPrefix: K => (String, String) = key => {
